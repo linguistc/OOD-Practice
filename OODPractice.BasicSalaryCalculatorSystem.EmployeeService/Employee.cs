@@ -1,0 +1,101 @@
+﻿using System.Runtime.InteropServices;
+
+namespace OODPractice.BasicSalaryCalculatorSystem.EmployeeService;
+
+public abstract class Employee
+{
+    public int Id { get; set; }
+    public string FName { get; set; }
+    public string LName { get; set; }
+    
+    public string FullName => $"{this.FName} {this.LName}";
+    public decimal HourlyRate { get; set; }
+    public int ExpectedHours { get; set; } // The expected number of work hours
+    public int LoggedHours { get; set; } // The actual number of work hours logged
+    
+    protected int HoursDeviation => this.LoggedHours - this.ExpectedHours;
+    protected int RegularHours => this.LoggedHours - Math.Max(this.HoursDeviation, 0);
+    
+    
+    protected decimal CalculateBasicSalary() => this.RegularHours * this.HourlyRate;
+    
+    protected decimal CalculateOvertimeSalary() => Math.Max(this.HoursDeviation, 0) * HRConstants.OvertimeRate * this.HourlyRate;
+    
+    protected virtual decimal CalculateGrossPay() => this.CalculateBasicSalary() + this.CalculateOvertimeSalary();
+    
+    protected virtual decimal CalculateNetSalary() => this.CalculateGrossPay() - HRConstants.TaxRate * this.CalculateGrossPay();
+
+    public virtual string ShowSalarySlip()
+    {
+        return $"Employee: #{this.Id} ({this.FullName}).\n" +
+               $"Logged hours: {this.LoggedHours}.\n" +
+               $"Hourly rate: {this.HourlyRate.ToString("C")} /hr.\n" +
+               $"Basic salary: {this.CalculateBasicSalary().ToString("C")}.\n" +
+               $"Overtime: {HRConstants.OvertimeRate} x {Math.Max(this.HoursDeviation, 0).ToString("C")} \n" +
+               $"Tax Amount: {HRConstants.TaxRate.ToString("%0")} x {this.CalculateGrossPay().ToString("C")}.\n" +
+               $"--------------------------------------------\n" +
+               $"Net salary: {this.CalculateNetSalary().ToString("C")}.\n";
+    }
+}
+
+public sealed class Manager : Employee
+{
+    public decimal Allowance { get; set; }
+    
+    protected override decimal CalculateGrossPay() => base.CalculateGrossPay() + this.Allowance;
+
+    public override string ShowSalarySlip()
+    {
+        return base.ShowSalarySlip() +
+               $"After allowance: {this.Allowance.ToString("C")} \n--------------------------------------------\n";
+    }
+}
+
+public sealed class SalesAgent : Employee
+{
+    public decimal TotalSales { get; set; }
+    
+    private decimal CalculateCommission() => this.TotalSales * HRConstants.CommissionRate;
+
+    protected override decimal CalculateGrossPay() => base.CalculateGrossPay() + this.CalculateCommission();
+    
+    public override string ShowSalarySlip()
+    {
+        return base.ShowSalarySlip() +
+               $"After commission: {this.CalculateCommission().ToString("C")} \n--------------------------------------------\n";
+    }
+}
+
+public sealed class Handyman : Employee
+{
+    public decimal Hardship { get; set; }
+    
+    protected override decimal CalculateGrossPay() => base.CalculateGrossPay() + this.Hardship;
+    
+    public override string ShowSalarySlip()
+    {
+        return base.ShowSalarySlip() +
+               $"After hardship: {this.Hardship.ToString("C")} \n--------------------------------------------\n";
+    }
+}
+
+public sealed class SoftwareEngineer : Employee
+{
+    public decimal TrainingAllowance { get; set; }
+    public int StoryPointCompleted { get; set; }
+
+    protected override decimal CalculateGrossPay()
+    {
+        return base.CalculateGrossPay() + this.CalculateBonusAmount() + TrainingAllowance;
+    }
+
+    private decimal CalculateBonusAmount() =>
+        StoryPointCompleted >= HRConstants.SWEStoryPointThreshold ? HRConstants.SWEStoryPointThreshold : 0;
+
+    public override string ShowSalarySlip()
+    {
+        return base.ShowSalarySlip() +
+               $"After bonus: {this.CalculateBonusAmount().ToString("C")}.\n" +
+               $"And after training allowance: {this.TrainingAllowance.ToString("C")}.\n--------------------------------------------\n";
+    }
+}
